@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ESP32 Smart Controller</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0b1329 0%, #17153b 50%, #0d1117 100%);
+            --card-bg: rgba(23, 31, 52, 0.75);
+            --card-border: rgba(255, 255, 255, 0.12);
+            --primary: #10b981;
+            --primary-glow: rgba(16, 185, 129, 0.4);
+            --danger: #ef4444;
+            --danger-glow: rgba(239, 68, 68, 0.4);
+            --accent: #6366f1;
+            --accent-glow: rgba(99, 102, 241, 0.4);
+            --text-main: #f8fafc;
+            --text-sub: #94a3b8;
+            --btn-bg: rgba(255, 255, 255, 0.05);
+            --btn-hover: rgba(255, 255, 255, 0.12);
+            --btn-active: rgba(255, 255, 255, 0.2);
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: system-ui, -apple-system, sans-serif; }
+        body { background: var(--bg-gradient); background-attachment: fixed; color: var(--text-main); min-height: 100vh; margin: 0; padding: 1rem; display: flex; justify-content: center; align-items: flex-start; }
+        .app-container { width: 100%; max-width: 480px; background: var(--card-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--card-border); border-radius: 1.75rem; padding: 1.25rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6); }
+        header { text-align: center; margin-bottom: 1.25rem; }
+        header h1 { font-size: 1.35rem; margin: 0; color: var(--text-main); font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
+        header p { font-size: 0.8rem; color: var(--text-sub); margin: 0.35rem 0 0 0; }
+        .tabs { display: flex; background: rgba(10, 15, 30, 0.7); padding: 0.35rem; border-radius: 1.2rem; gap: 0.25rem; margin-bottom: 1.25rem; border: 1px solid var(--card-border); }
+        .tab-btn { flex: 1; padding: 0.65rem 0.2rem; font-size: 0.82rem; font-weight: 600; border: none; background: transparent; color: var(--text-sub); border-radius: 0.85rem; cursor: pointer; transition: all 0.3s ease; display: flex; flex-direction: column; align-items: center; gap: 0.35rem; }
+        .tab-btn.active { background: var(--accent); color: #ffffff; box-shadow: 0 4px 15px var(--accent-glow); }
+        .tab-content { display: none; opacity: 0; transition: all 0.3s ease; }
+        .tab-content.active { display: block; opacity: 1; }
+        .lock-box { text-align: center; padding: 1.75rem 1rem; background: rgba(10, 15, 30, 0.4); border-radius: 1.25rem; border: 1px solid var(--card-border); }
+        .lock-icon-wrapper { width: 100px; height: 100px; margin: 0 auto 1.25rem auto; border-radius: 50%; background: rgba(16, 185, 129, 0.1); border: 2px solid var(--primary); display: flex; align-items: center; justify-content: center; font-size: 2.75rem; color: var(--primary); transition: all 0.4s ease; }
+        .lock-icon-wrapper.unlocked { background: rgba(239, 68, 68, 0.15); border-color: var(--danger); color: var(--danger); }
+        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; }
+        .btn { background: var(--btn-bg); border: 1px solid var(--card-border); color: var(--text-main); padding: 0.85rem 0.25rem; font-size: 0.82rem; font-weight: 600; border-radius: 0.85rem; cursor: pointer; transition: all 0.2s ease; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.4rem; user-select: none; }
+        .btn:hover { background: var(--btn-hover); transform: translateY(-2px); }
+        .btn:active { transform: scale(0.93); }
+        .btn-main { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; font-size: 1.05rem; padding: 1rem; width: 100%; border: none; flex-direction: row; gap: 0.6rem; }
+        .btn-danger { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); border: none; }
+        .btn-wide { grid-column: span 3; flex-direction: row; gap: 0.5rem; }
+        input[type="password"] { width: 100%; padding: 0.85rem; border-radius: 0.85rem; border: 1px solid var(--card-border); background: rgba(10, 15, 30, 0.6); color: #ffffff; font-size: 0.95rem; text-align: center; margin-bottom: 0.75rem; outline: none; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1><i class="fa-solid fa-microchip"></i> التحكم الذكي ESP32</h1>
+            <p>نظام القفل وأجهزة التحكم عبر الـ IR</p>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('tab-lock', this)"><i class="fa-solid fa-lock"></i> القفل</button>
+            <button class="tab-btn" onclick="switchTab('tab-sam', this)"><i class="fa-solid fa-tv"></i> سامسونج</button>
+            <button class="tab-btn" onclick="switchTab('tab-sat', this)"><i class="fa-solid fa-satellite-dish"></i> ستارسات</button>
+            <button class="tab-btn" onclick="switchTab('tab-fan', this)"><i class="fa-solid fa-fan"></i> المروحة</button>
+        </div>
+
+        <div id="tab-lock" class="tab-content active">
+            <div class="lock-box">
+                <div id="lockIconWrapper" class="lock-icon-wrapper"><i id="lockIcon" class="fa-solid fa-lock"></i></div>
+                <button id="unlockBtn" class="btn btn-main" onclick="triggerUnlock()"><i class="fa-solid fa-key"></i> فتح القفل الذكي</button>
+            </div>
+        </div>
+
+        <div id="tab-sam" class="tab-content">
+            <div class="grid">
+                <button class="btn btn-danger" onclick="sendCmd('sam_power')"><i class="fa-solid fa-power-off"></i>تشغيل / إيقاف</button>
+                <button class="btn" onclick="sendCmd('sam_source')"><i class="fa-solid fa-sliders"></i>المصدر</button>
+                <button class="btn" onclick="sendCmd('sam_mute')"><i class="fa-solid fa-volume-xmark"></i>كتم</button>
+                <button class="btn" onclick="sendCmd('sam_volup')"><i class="fa-solid fa-volume-high"></i>صوت +</button>
+                <button class="btn" onclick="sendCmd('sam_up')"><i class="fa-solid fa-chevron-up"></i>▲</button>
+                <button class="btn" onclick="sendCmd('sam_chup')"><i class="fa-solid fa-angle-up"></i>قناة +</button>
+                <button class="btn" onclick="sendCmd('sam_left')"><i class="fa-solid fa-chevron-right"></i>◄</button>
+                <button class="btn" onclick="sendCmd('sam_enter')"><i class="fa-solid fa-circle-dot"></i>موافق</button>
+                <button class="btn" onclick="sendCmd('sam_right')"><i class="fa-solid fa-chevron-left"></i>►</button>
+                <button class="btn" onclick="sendCmd('sam_voldown')"><i class="fa-solid fa-volume-low"></i>صوت -</button>
+                <button class="btn" onclick="sendCmd('sam_down')"><i class="fa-solid fa-chevron-down"></i>▼</button>
+                <button class="btn" onclick="sendCmd('sam_chdown')"><i class="fa-solid fa-angle-down"></i>قناة -</button>
+                <button class="btn" onclick="sendCmd('sam_home')"><i class="fa-solid fa-house"></i>الرئيسية</button>
+                <button class="btn" onclick="sendCmd('sam_menu')"><i class="fa-solid fa-bars"></i>القائمة</button>
+                <button class="btn" onclick="sendCmd('sam_return')"><i class="fa-solid fa-rotate-left"></i>رجوع</button>
+                <button class="btn btn-wide" onclick="sendCmd('sam_exit')"><i class="fa-solid fa-right-from-bracket"></i>خروج (Exit)</button>
+            </div>
+        </div>
+
+        <div id="tab-sat" class="tab-content">
+            <div class="grid">
+                <button class="btn btn-danger" onclick="sendCmd('sat_power')"><i class="fa-solid fa-power-off"></i>تشغيل / إيقاف</button>
+                <button class="btn" onclick="sendCmd('sat_sat')"><i class="fa-solid fa-satellite"></i>SAT</button>
+                <button class="btn" onclick="sendCmd('sat_mute')"><i class="fa-solid fa-volume-xmark"></i>كتم</button>
+                <button class="btn" onclick="sendCmd('sat_volup')"><i class="fa-solid fa-volume-high"></i>صوت +</button>
+                <button class="btn" onclick="sendCmd('sat_up')"><i class="fa-solid fa-chevron-up"></i>▲</button>
+                <button class="btn" onclick="sendCmd('sat_chup')"><i class="fa-solid fa-angle-up"></i>قناة +</button>
+                <button class="btn" onclick="sendCmd('sat_left')"><i class="fa-solid fa-chevron-right"></i>◄</button>
+                <button class="btn" onclick="sendCmd('sat_ok')"><i class="fa-solid fa-circle-dot"></i>OK</button>
+                <button class="btn" onclick="sendCmd('sat_right')"><i class="fa-solid fa-chevron-left"></i>►</button>
+                <button class="btn" onclick="sendCmd('sat_voldown')"><i class="fa-solid fa-volume-low"></i>صوت -</button>
+                <button class="btn" onclick="sendCmd('sat_down')"><i class="fa-solid fa-chevron-down"></i>▼</button>
+                <button class="btn" onclick="sendCmd('sat_chdown')"><i class="fa-solid fa-angle-down"></i>قناة -</button>
+                <button class="btn" onclick="sendCmd('sat_menu')"><i class="fa-solid fa-bars"></i>القائمة</button>
+                <button class="btn" onclick="sendCmd('sat_info')"><i class="fa-solid fa-circle-info"></i>INFO</button>
+                <button class="btn" onclick="sendCmd('sat_exit')"><i class="fa-solid fa-right-from-bracket"></i>خروج</button>
+                <button class="btn" onclick="sendCmd('sat_1')">1</button>
+                <button class="btn" onclick="sendCmd('sat_2')">2</button>
+                <button class="btn" onclick="sendCmd('sat_3')">3</button>
+                <button class="btn" onclick="sendCmd('sat_4')">4</button>
+                <button class="btn" onclick="sendCmd('sat_5')">5</button>
+                <button class="btn" onclick="sendCmd('sat_6')">6</button>
+                <button class="btn" onclick="sendCmd('sat_7')">7</button>
+                <button class="btn" onclick="sendCmd('sat_8')">8</button>
+                <button class="btn" onclick="sendCmd('sat_9')">9</button>
+                <button class="btn btn-wide" onclick="sendCmd('sat_0')">0</button>
+            </div>
+        </div>
+
+        <div id="tab-fan" class="tab-content">
+            <div id="fanAuthSection">
+                <input type="password" id="fanPass" placeholder="كلمة المرور لتفعيل المروحة">
+                <button class="btn btn-main" onclick="loginFan()"><i class="fa-solid fa-lock-open"></i> تسجيل الدخول</button>
+            </div>
+            <div id="fanControls" class="grid" style="display: none;">
+                <button class="btn" onclick="sendFanCmd('fan_on_speed')"><i class="fa-solid fa-gauge-high"></i>تشغيل/سرعة</button>
+                <button class="btn btn-danger" onclick="sendFanCmd('fan_off')"><i class="fa-solid fa-power-off"></i>إيقاف</button>
+                <button class="btn" onclick="sendFanCmd('fan_mode')"><i class="fa-solid fa-wind"></i>الوضع</button>
+                <button class="btn" onclick="sendFanCmd('fan_timer')"><i class="fa-solid fa-clock"></i>المؤقت</button>
+                <button class="btn" onclick="sendFanCmd('fan_swing')"><i class="fa-solid fa-arrows-left-right"></i>الدوران</button>
+                <button class="btn" onclick="sendFanCmd('fan_lamp')"><i class="fa-solid fa-lightbulb"></i>الإضاءة</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let fanToken = "";
+        function switchTab(tabId, btnElement) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            btnElement.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+        }
+        async function triggerUnlock() {
+            const btn = document.getElementById('unlockBtn');
+            const iconWrapper = document.getElementById('lockIconWrapper');
+            const icon = document.getElementById('lockIcon');
+            btn.disabled = true;
+            iconWrapper.classList.add('unlocked');
+            icon.className = 'fa-solid fa-lock-open';
+            try {
+                await fetch('/api/unlock', { method: 'POST' });
+                setTimeout(() => {
+                    iconWrapper.classList.remove('unlocked');
+                    icon.className = 'fa-solid fa-lock';
+                    btn.disabled = false;
+                }, 1500);
+            } catch (e) {
+                alert('فشل الاتصال بالخادم!');
+                iconWrapper.classList.remove('unlocked');
+                icon.className = 'fa-solid fa-lock';
+                btn.disabled = false;
+            }
+        }
+        async function sendCmd(code) {
+            try { await fetch('/api/cmd?code=' + code); } catch (e) { console.error(e); }
+        }
+        async function loginFan() {
+            const pass = document.getElementById('fanPass').value;
+            try {
+                const res = await fetch('/api/login?pass=' + encodeURIComponent(pass));
+                const data = await res.json();
+                if (data.success) {
+                    fanToken = data.token;
+                    document.getElementById('fanAuthSection').style.display = 'none';
+                    document.getElementById('fanControls').style.display = 'grid';
+                } else { alert('كلمة المرور غير صحيحة!'); }
+            } catch (e) { alert('خطأ أثناء تسجيل الدخول'); }
+        }
+        async function sendFanCmd(code) {
+            if (!fanToken) return;
+            try { await fetch(`/api/cmd?code=${code}&token=${fanToken}`); } catch (e) { console.error(e); }
+        }
+    </script>
+</body>
+</html>
