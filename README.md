@@ -1,5 +1,4 @@
 
-```markdown
 # 🚀 ESP32 Smart Home Ecosystem (Smart Lock, IR Remote API & IR Decoder)
 
 مشروع مدمج متكامل يجمع بين التحكم بالقفل الذكي، إرسال واستقبال إشارات الأشعة تحت الحمراء (IR)، والتحكم بالأجهزة المنزلية عبر خادم REST API والتحديث اللاسلكي (OTA).
